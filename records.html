@@ -1,40 +1,144 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>구역별 기록 확인</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>저장된 기록 확인</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .record { border-bottom: 1px solid #ddd; padding: 10px 0; }
+    .record h3 { margin: 0; }
+    .btn { margin-right: 8px; padding: 4px 8px; }
+    #controls { margin-bottom: 16px; }
+  </style>
 </head>
 <body>
-  <h2>구역별 기록 확인</h2>
+  <h1>저장된 기록 확인</h1>
 
-  <div id="records-container">
-    <!-- 저장된 기록이 여기에 나타남 -->
+  <div id="controls">
+    <input type="text" id="search" placeholder="구역 또는 담당자 검색…" oninput="render()"/>
+    <select id="sort" onchange="render()">
+      <option value="new">최신순</option>
+      <option value="old">오래된순</option>
+    </select>
+    <button onclick="exportToExcel()">엑셀로 내보내기</button>
+  </div>
+
+  <div id="records-container"></div>
+
+  <div style="margin-top:40px;">
+    <button onclick="location.href='index.html'">홈</button>
   </div>
 
   <script>
-    const container = document.getElementById('records-container');
-    const records = JSON.parse(localStorage.getItem('zoneRecords') || '[]');
+    // 로컬스토리지에서 불러오기
+    function loadRecords() {
+      return JSON.parse(localStorage.getItem('zoneRecords') || '[]');
+    }
 
-    if (records.length === 0) {
-      container.innerHTML = '<p>저장된 기록이 없습니다.</p>';
-    } else {
-      records.forEach(record => {
+    // 화면 렌더링
+    function render() {
+      const container = document.getElementById('records-container');
+      const search = document.getElementById('search').value.toLowerCase();
+      const sort      = document.getElementById('sort').value;
+      let recs = loadRecords();
+
+      // 검색
+      if (search) {
+        recs = recs.filter(r =>
+          r.zone.toLowerCase().includes(search) ||
+          r.personName.toLowerCase().includes(search)
+        );
+      }
+
+      // 정렬
+      recs.sort((a,b) => {
+        if (sort==='new') return new Date(b.savedAt) - new Date(a.savedAt);
+        else            return new Date(a.savedAt) - new Date(b.savedAt);
+      });
+
+      // 출력
+      container.innerHTML = '';
+      recs.forEach((r,i) => {
         const div = document.createElement('div');
         div.className = 'record';
         div.innerHTML = `
-          <strong>${record.zone}</strong><br>
-          시작: ${record.startDate}<br>
-          종료: ${record.endDate}<br>
-          담당자: ${record.personName}<br>
-          메모: ${record.memo || '-'}<br>
-          저장일: ${new Date(record.savedAt).toLocaleString()}
-          <hr>
+          <h3>${r.zone} (저장 ${new Date(r.savedAt).toLocaleString()})</h3>
+          <p>시작: ${r.startDate}<br>
+             종료: ${r.endDate}<br>
+             담당자: ${r.personName}<br>
+             메모: ${r.memo || '-'}
+          </p>
+          <button class="btn" onclick="editRecord(${i})">수정</button>
+          <button class="btn" onclick="deleteRecord(${i})">삭제</button>
         `;
         container.appendChild(div);
       });
+
+      if (recs.length===0) {
+        container.innerHTML = '<p>표시할 기록이 없습니다.</p>';
+      }
     }
+
+    // 레코드 삭제
+    function deleteRecord(idx) {
+      if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
+      const recs = loadRecords();
+      recs.splice(idx,1);
+      localStorage.setItem('zoneRecords', JSON.stringify(recs));
+      render();
+    }
+
+    // 레코드 수정 (간단히 prompt로)
+    function editRecord(idx) {
+      const recs = loadRecords();
+      const r = recs[idx];
+      const start = prompt('시작 날짜', r.startDate);
+      if (start===null) return;
+      const end   = prompt('종료 날짜',  r.endDate);
+      if (end===null)   return;
+      const person= prompt('담당자',     r.personName);
+      if (person===null) return;
+      const memo  = prompt('메모',       r.memo);
+      if (memo===null)  return;
+      // 수정 반영
+      r.startDate  = start;
+      r.endDate    = end;
+      r.personName = person;
+      r.memo       = memo;
+      localStorage.setItem('zoneRecords', JSON.stringify(recs));
+      render();
+    }
+
+    // JSON → CSV → 엑셀(.csv) 다운로드
+    function exportToExcel() {
+      const recs = loadRecords();
+      if (recs.length===0) { alert('내보낼 기록이 없습니다.'); return; }
+
+      // CSV 헤더
+      const header = ['구역','시작일','종료일','담당자','메모','저장일'];
+      const rows = recs.map(r => [
+        `"${r.zone}"`,
+        r.startDate,
+        r.endDate,
+        `"${r.personName}"`,
+        `"${r.memo.replace(/"/g,'""')}"`,
+        new Date(r.savedAt).toLocaleString()
+      ].join(','));
+
+      const csvContent = [ header.join(','), ...rows ].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'zone_records.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // 초기 렌더링
+    render();
   </script>
 </body>
 </html>

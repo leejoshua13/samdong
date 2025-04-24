@@ -1,17 +1,68 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>No.4 - 신흥-2</title>
   <!-- 네이버 지도 API -->
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px auto; max-width: 700px; padding-bottom: 100px; }
-    #map { width: 100%; height: 600px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-    input, button, textarea { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
-    textarea { resize: vertical; height: 100px; }
-    .label-marker { position: absolute; transform: translate(-50%, -50%); font-size: 16px; font-weight: bold; color: red; background: none; border: none; text-align: center; }
+    /* ─────────────────────────────────────
+       컨테이너 래퍼
+    ───────────────────────────────────── */
+    .container {
+      max-width: 700px;      /* 최대 폭 */
+      margin: 0 auto;        /* 가로 중앙 정렬 */
+      padding: 0 16px;       /* 좌우 여백 */
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px 0;        /* 상하 여백 */
+      padding-bottom: 100px; /* 내비게이션 높이만큼 여유 */
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    #map {
+      width: 100%;
+      height: 600px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    textarea { resize: vertical; height: 120px; }
+
+    .label-marker {
+      font-size: 16px;
+      font-weight: bold;
+      color: red;
+      background: none;
+      border: none;
+      text-align: center;
+    }
+
+    /* 하단 내비게이션 */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -23,18 +74,32 @@
       justify-content: space-around;
       padding: 10px 0;
     }
-    .bottom-nav button { width: 45%; padding: 10px; font-size: 16px; }
+    .bottom-nav button {
+      width: 45%;
+      padding: 10px;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
-  <h2>No.4 - 신흥-2</h2>
-  <div id="map"></div>
+  <div class="container">
+    <h2>No.4 – 신흥-2</h2>
+    <div id="map"></div>
 
-  <label>시작 날짜: <input type="date" id="start-date"></label>
-  <label>종료 날짜: <input type="date" id="end-date"></label>
-  <label>담당자: <input type="text" id="person-name" placeholder="이름 입력"></label>
-  <label>메모:<br><textarea id="memo" placeholder="메모를 입력하세요"></textarea></label>
-  <button onclick="saveRecord()">저장</button>
+    <label for="start-date">시작 날짜</label>
+    <input type="date" id="start-date"/>
+
+    <label for="end-date">종료 날짜</label>
+    <input type="date" id="end-date"/>
+
+    <label for="person-name">담당자</label>
+    <input type="text" id="person-name" placeholder="이름을 입력하세요"/>
+
+    <label for="memo">메모</label>
+    <textarea id="memo" placeholder="메모를 입력하세요"></textarea>
+
+    <button onclick="saveRecord()">저장</button>
+  </div>
 
   <div class="bottom-nav">
     <button onclick="location.href='index.html'">홈</button>
@@ -43,8 +108,6 @@
 
   <script>
     // 신흥 하위 구역 좌표 (lng, lat)
-    const zoneNumber = 4;
-    const zoneName   = '신흥-2';
     const subs = {
     '4-1': [[127.97615933472593,34.84383558323985],[127.97583333869079,34.845051010999754],[127.97615933472593,34.845112164123094],[127.97640150321149,34.84492870461601],[127.97683926931745,34.84487519551588],[127.97710006614699,34.844722312181375],[127.97781725742647,34.84480639805048],[127.97886044474456,34.84435539101939],[127.97965214940336,34.844194862496465],[127.97973597695648,34.84431716997079],[127.97919575495348,34.84554023471719],[127.97997814544027,34.8457236928611],[127.9821949184896,34.84619762450768],[127.98228806021461,34.84476053304108],[127.97990363206094,34.84370563078161],[127.9785623912253,34.84354510099138],[127.97797559835891,34.84359861095626],[127.97759371728836,34.843124664343634],[127.97615002055397,34.843827938982955]],
     '4-2': [[127.97581471182355,34.845112164217355],[127.97615933620614,34.845158029030046],[127.97642944720764,34.84498221377554],[127.9768951558313,34.84491341639887],[127.97715595266084,34.8447758214744],[127.97778931638896,34.84485226312782],[127.97888838874076,34.844408900551656],[127.97961489419214,34.844256016350215],[127.97912124305253,34.84550965841375],[127.97842268011709,34.845792489653974],[127.977379492799,34.84645752144276],[127.9771652668328,34.84682443323267],[127.97694172669304,34.84677092536515],[127.97654121727669,34.84637343725994],[127.97593579606632,34.84657982555453],[127.9755725433397,34.84623584477649],[127.97519066226738,34.845754269272774],[127.97566568506477,34.84540264093421],[127.97576814096186,34.84528033507303],[127.97581471182355,34.845112164217355]],
@@ -65,7 +128,6 @@
     const map = new naver.maps.Map('map', {});
     const bounds = new naver.maps.LatLngBounds();
 
-    // 경계 그리기 및 마커 표시
     Object.entries(subs).forEach(([key, coords]) => {
       const path = coords.map(([lng, lat]) => new naver.maps.LatLng(lat, lng));
       new naver.maps.Polyline({ map, path, strokeColor: '#ff0000', strokeWeight: 2 });
@@ -82,25 +144,21 @@
       });
     });
 
-    // 화면에 맞게 초기 범위 설정 (100m 스케일)
+    // 초기 뷰 설정
     map.fitBounds(bounds);
     map.setCenter(bounds.getCenter());
-    map.setZoom(15); // 초기 300m 줌
+    map.setZoom(15); // 100m
+    setTimeout(() => map.setZoom(16), 100); // 1초 후 300m
 
-    // 1초 후 300m 스케일로 축소
-    setTimeout(() => {
-      map.setZoom(16); // 대략 100m 축척
-    }, 100);
-
-    // 기록 저장 함수
+    // 기록 저장
     function saveRecord() {
       const record = {
-        zone: 'No.3 - 신흥',
+        zone: 'No.4 - 신흥-2',
         startDate: document.getElementById('start-date').value,
-        endDate: document.getElementById('end-date').value,
-        personName: document.getElementById('person-name').value,
-        memo: document.getElementById('memo').value,
-        savedAt: new Date().toISOString()
+        endDate:   document.getElementById('end-date').value,
+        personName:document.getElementById('person-name').value,
+        memo:      document.getElementById('memo').value,
+        savedAt:   new Date().toISOString()
       };
       const recs = JSON.parse(localStorage.getItem('zoneRecords')||'[]');
       recs.push(record);

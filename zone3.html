@@ -1,17 +1,68 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>No.3 - 신흥-1</title>
   <!-- 네이버 지도 API -->
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px auto; max-width: 700px; padding-bottom: 100px; }
-    #map { width: 100%; height: 600px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-    input, button, textarea { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
-    textarea { resize: vertical; height: 100px; }
-    .label-marker { position: absolute; transform: translate(-50%, -50%); font-size: 16px; font-weight: bold; color: red; background: none; border: none; text-align: center; }
+    /* ─────────────────────────────────────
+       컨테이너 래퍼
+    ───────────────────────────────────── */
+    .container {
+      max-width: 700px;      /* 최대 폭 */
+      margin: 0 auto;        /* 가로 중앙 정렬 */
+      padding: 0 16px;       /* 좌우 여백 */
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px 0;        /* 상하 여백 */
+      padding-bottom: 100px; /* 내비게이션 높이만큼 여유 */
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    #map {
+      width: 100%;
+      height: 600px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    textarea { resize: vertical; height: 120px; }
+
+    .label-marker {
+      font-size: 16px;
+      font-weight: bold;
+      color: red;
+      background: none;
+      border: none;
+      text-align: center;
+    }
+
+    /* 하단 내비게이션 */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -23,18 +74,32 @@
       justify-content: space-around;
       padding: 10px 0;
     }
-    .bottom-nav button { width: 45%; padding: 10px; font-size: 16px; }
+    .bottom-nav button {
+      width: 45%;
+      padding: 10px;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
-  <h2>No.3 - 신흥-1</h2>
-  <div id="map"></div>
+  <div class="container">
+    <h2>No.3 – 신흥-1</h2>
+    <div id="map"></div>
 
-  <label>시작 날짜: <input type="date" id="start-date"></label>
-  <label>종료 날짜: <input type="date" id="end-date"></label>
-  <label>담당자: <input type="text" id="person-name" placeholder="이름 입력"></label>
-  <label>메모:<br><textarea id="memo" placeholder="메모를 입력하세요"></textarea></label>
-  <button onclick="saveRecord()">저장</button>
+    <label for="start-date">시작 날짜</label>
+    <input type="date" id="start-date"/>
+
+    <label for="end-date">종료 날짜</label>
+    <input type="date" id="end-date"/>
+
+    <label for="person-name">담당자</label>
+    <input type="text" id="person-name" placeholder="이름을 입력하세요"/>
+
+    <label for="memo">메모</label>
+    <textarea id="memo" placeholder="메모를 입력하세요"></textarea>
+
+    <button onclick="saveRecord()">저장</button>
+  </div>
 
   <div class="bottom-nav">
     <button onclick="location.href='index.html'">홈</button>
@@ -52,15 +117,14 @@
 
     // 위치 보정용 오프셋 (픽셀)
     const offsets = {
-      '3-1': new naver.maps.Point(0, -20),  // 1번 아래쪽으로 조정
-      '3-3': new naver.maps.Point(-30, 20) // 3번 왼쪽 위로 조정
+      '3-1': new naver.maps.Point(0, -20),
+      '3-3': new naver.maps.Point(-30, 20)
     };
 
     // 지도 초기화
     const map = new naver.maps.Map('map', {});
     const bounds = new naver.maps.LatLngBounds();
 
-    // 경계 그리기 및 마커 표시
     Object.entries(subs).forEach(([key, coords]) => {
       const path = coords.map(([lng, lat]) => new naver.maps.LatLng(lat, lng));
       new naver.maps.Polyline({ map, path, strokeColor: '#ff0000', strokeWeight: 2 });
@@ -77,25 +141,21 @@
       });
     });
 
-    // 화면에 맞게 초기 범위 설정 (100m 스케일)
+    // 초기 뷰 설정
     map.fitBounds(bounds);
     map.setCenter(bounds.getCenter());
-    map.setZoom(17); // 초기 100m 줌
+    map.setZoom(15); // 100m
+    setTimeout(() => map.setZoom(16), 100); // 1초 후 300m
 
-    // 1초 후 300m 스케일로 축소
-    setTimeout(() => {
-      map.setZoom(15); // 대략 300m 축척
-    }, 100);
-
-    // 기록 저장 함수
+    // 기록 저장
     function saveRecord() {
       const record = {
         zone: 'No.3 - 신흥',
         startDate: document.getElementById('start-date').value,
-        endDate: document.getElementById('end-date').value,
-        personName: document.getElementById('person-name').value,
-        memo: document.getElementById('memo').value,
-        savedAt: new Date().toISOString()
+        endDate:   document.getElementById('end-date').value,
+        personName:document.getElementById('person-name').value,
+        memo:      document.getElementById('memo').value,
+        savedAt:   new Date().toISOString()
       };
       const recs = JSON.parse(localStorage.getItem('zoneRecords')||'[]');
       recs.push(record);

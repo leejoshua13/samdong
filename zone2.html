@@ -2,16 +2,58 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>No.2 - 창지족-2 지도</title>
   <!-- 네이버 지도 API -->
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px auto; max-width: 700px; padding-bottom: 100px; }
-    #map { width: 100%; height: 600px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-    input, button, textarea { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+    /* ─────────────────────────────────────
+       컨테이너 래퍼
+    ───────────────────────────────────── */
+    .container {
+      max-width: 700px;      /* 최대 폭 */
+      margin: 0 auto;        /* 가로 중앙 정렬 */
+      padding: 0 16px;       /* 좌우 여백 */
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px 0;        /* 상하는 20px, 좌우는 container가 담당 */
+      padding-bottom: 100px; /* 내비게이션 높이만큼 여유 */
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 600px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
     textarea { resize: vertical; height: 100px; }
-    .label-marker { font-size: 16px; font-weight: bold; color: red; background: none; border: none; text-align: center; }
+
+    .label-marker {
+      font-size: 16px;
+      font-weight: bold;
+      color: red;
+      background: none;
+      border: none;
+      text-align: center;
+    }
+
+    /* 하단 내비게이션 */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -23,18 +65,37 @@
       justify-content: space-around;
       padding: 10px 0;
     }
-    .bottom-nav button { width: 45%; padding: 10px; font-size: 16px; }
+    .bottom-nav button {
+      width: 45%;
+      padding: 10px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
-  <h2>No.2 - 창지족-2</h2>
-  <div id="map"></div>
 
-  <label>시작 날짜: <input type="date" id="start-date"></label>
-  <label>종료 날짜: <input type="date" id="end-date"></label>
-  <label>담당자: <input type="text" id="person-name" placeholder="이름 입력"></label>
-  <label>메모:<br><textarea id="memo" placeholder="메모를 입력하세요"></textarea></label>
-  <button onclick="saveRecord()">저장</button>
+  <div class="container">
+    <h2>No.2 - 창지족-2</h2>
+    <div id="map"></div>
+
+    <label>시작 날짜:
+      <input type="date" id="start-date">
+    </label>
+
+    <label>종료 날짜:
+      <input type="date" id="end-date">
+    </label>
+
+    <label>담당자:
+      <input type="text" id="person-name" placeholder="이름 입력">
+    </label>
+
+    <label>메모:
+      <textarea id="memo" placeholder="메모를 입력하세요"></textarea>
+    </label>
+
+    <button onclick="saveRecord()">저장</button>
+  </div>
 
   <div class="bottom-nav">
     <button onclick="location.href='index.html'">홈</button>
@@ -42,7 +103,7 @@
   </div>
 
   <script>
-    // 창지족-2 하위 구역 좌표 (lng, lat)
+    // 하위 구역 좌표 정의 (lng, lat 순)
     const subs = {
     '2-1': [[127.99275820330843,34.837569005374064],[127.99207265702586,34.836401647872265],[127.99380187078498,34.83596493433605],[127.9939348872278,34.83665359693515],[127.99405767163665,34.83672918150366],[127.99517296335159,34.8364100461868],[127.99552085250991,34.836468834364425],[127.99557201268027,34.836594808889444],[127.99625755896284,34.8364100461868],[127.99719890609862,34.83644363943627],[127.99800723679004,34.836267274723454],[127.99821187747136,34.836309266356],[127.99822210950543,34.836603207184254],[127.9981811813692,34.836678791799045],[127.99795607661969,34.836804766002786],[127.9967282325315,34.83724147508396],[127.99559247674841,34.83726666976793],[127.99411906384103,34.83754381078265],[127.99292191585357,34.83747662516775],[127.99269681110405,34.837493421576596]],
     '2-2': [[127.99502971487465,34.8388959096273],[127.99484553825988,34.83866076359763],[127.99469205774886,34.83864396742695],[127.99437486469276,34.83826605268],[127.99374047858049,34.83811488629573],[127.99347444569474,34.83800571040108],[127.9932800370459,34.837619394534414],[127.9925740266952,34.83760259815131],[127.99110061378786,34.837862941705055],[127.9908038847999,34.83779575635066],[127.99015926665362,34.83730026266787],[127.98951464850575,34.83747662516775],[127.99006717834698,34.83902188043895],[127.99054808394817,34.84002124204258],[127.99245124228645,34.8395761497172],[127.99441579282905,34.83908066675143],[127.99500925080497,34.8388959096273]],
@@ -52,16 +113,34 @@
     // 지도 초기화
     const map = new naver.maps.Map('map', { zoom: 16 });
     const bounds = new naver.maps.LatLngBounds();
+
     Object.entries(subs).forEach(([key, coords]) => {
       const path = coords.map(([lng, lat]) => new naver.maps.LatLng(lat, lng));
-      new naver.maps.Polyline({ map, path, strokeColor: '#ff0000', strokeWeight: 2 });
+      new naver.maps.Polyline({
+        map,
+        path,
+        strokeColor: '#ff0000',
+        strokeWeight: 2
+      });
       path.forEach(p => bounds.extend(p));
-      const subBounds = new naver.maps.LatLngBounds(path[0], path[0]); path.forEach(p => subBounds.extend(p));
-      new naver.maps.Marker({ position: subBounds.getCenter(), map, icon: { content: `<div class="label-marker">${key.split('-')[1]}</div>`, anchor: new naver.maps.Point(0,0) } });
-    });
-    map.fitBounds(bounds); if (map.getZoom() > 17) map.setZoom(17);
 
-    // 기록 저장 함수
+      // 라벨
+      const subBounds = new naver.maps.LatLngBounds(path[0], path[0]);
+      path.forEach(p => subBounds.extend(p));
+      new naver.maps.Marker({
+        position: subBounds.getCenter(),
+        map,
+        icon: {
+          content: `<div class="label-marker">${key.split('-')[1]}</div>`,
+          anchor: new naver.maps.Point(0, 0)
+        }
+      });
+    });
+
+    map.fitBounds(bounds);
+    if (map.getZoom() > 17) map.setZoom(17);
+
+    // 기록 저장
     function saveRecord() {
       const record = {
         zone: 'No.2 - 창지족-2',
@@ -71,8 +150,9 @@
         memo:      document.getElementById('memo').value,
         savedAt:   new Date().toISOString()
       };
-      const recs = JSON.parse(localStorage.getItem('zoneRecords')||'[]');
-      recs.push(record); localStorage.setItem('zoneRecords', JSON.stringify(recs));
+      const recs = JSON.parse(localStorage.getItem('zoneRecords') || '[]');
+      recs.push(record);
+      localStorage.setItem('zoneRecords', JSON.stringify(recs));
       alert('기록이 저장되었습니다!');
       location.href = 'index.html#records';
     }
