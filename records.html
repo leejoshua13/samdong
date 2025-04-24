@@ -21,27 +21,110 @@
       <option value="new">최신순</option>
       <option value="old">오래된순</option>
     </select>
-    <button onclick="exportToExcel()">엑셀로 내보내기</button>
+    <button class="btn" onclick="exportToExcel()">엑셀로 내보내기</button>
   </div>
 
   <div id="records-container"></div>
 
   <div style="margin-top:40px;">
-    <button onclick="location.href='index.html'">홈</button>
+    <button class="btn" onclick="location.href='index.html'">홈</button>
   </div>
 
-  <script>
-    // 로컬스토리지에서 불러오기
-    function loadRecords() {
-      return JSON.parse(localStorage.getItem('zoneRecords') || '[]');
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      update,
+      remove
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    // Firebase 설정
+    const firebaseConfig = {
+      apiKey: "AIzaSyDk9fpF-lsGYeuRNcvfaB0cpdANK-mDPSQ",
+      authDomain: "sandong-9579a.firebaseapp.com",
+      databaseURL: "https://sandong-9579a.firebaseio.com",
+      projectId: "sandong-9579a",
+      storageBucket: "sandong-9579a.appspot.com",
+      messagingSenderId: "130428062710",
+      appId: "1:130428062710:web:002f9d0899f5b7c5cad5d7"
+    };
+
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // 전역 레코드 저장
+    let allRecords = [];
+
+    // 실시간 구독 및 콜백
+    function subscribeRecords(callback) {
+      const recordsRef = ref(db, 'zoneRecords');
+      onValue(recordsRef, snapshot => {
+        const data = snapshot.val() || {};
+        allRecords = Object.entries(data).map(
+          ([key, rec]) => ({ key, ...rec })
+        );
+        callback(allRecords);
+      });
     }
 
-    // 화면 렌더링
+    // 기록 수정
+    window.editRecordInDB = function(key) {
+      const r = allRecords.find(r => r.key === key);
+      if (!r) return;
+      const s = prompt('시작 날짜',   r.startDate);  if (s === null) return;
+      const e = prompt('종료 날짜',   r.endDate);    if (e === null) return;
+      const p = prompt('담당자',      r.personName); if (p === null) return;
+      const m = prompt('메모',        r.memo);       if (m === null) return;
+      update(ref(db, `zoneRecords/${key}`), {
+        startDate:  s,
+        endDate:    e,
+        personName: p,
+        memo:       m,
+        savedAt:    new Date().toISOString()
+      });
+    };
+
+    // 기록 삭제
+    window.deleteRecordFromDB = function(key) {
+      if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
+      remove(ref(db, `zoneRecords/${key}`));
+    };
+
+    // 엑셀 내보내기
+    window.exportToExcel = function() {
+      if (!allRecords.length) {
+        alert('표시할 기록이 없습니다.');
+        return;
+      }
+      const data = allRecords.map(r => ({
+        '구역':       r.zone,
+        '시작일':     r.startDate,
+        '종료일':     r.endDate,
+        '담당자':     r.personName,
+        '메모':       r.memo || '-',
+        '저장일':     new Date(r.savedAt).toLocaleString()
+      }));
+      const header = ['구역','시작일','종료일','담당자','메모','저장일'];
+      const rows = data.map(item => header.map(h => `"${item[h]}"`).join(','));
+      const csvContent = [header.join(','), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'zone_records.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // 렌더링
     function render() {
       const container = document.getElementById('records-container');
       const search = document.getElementById('search').value.toLowerCase();
-      const sort      = document.getElementById('sort').value;
-      let recs = loadRecords();
+      const sort   = document.getElementById('sort').value;
+      let recs = allRecords.slice();
 
       // 검색
       if (search) {
@@ -50,16 +133,19 @@
           r.personName.toLowerCase().includes(search)
         );
       }
-
       // 정렬
-      recs.sort((a,b) => {
-        if (sort==='new') return new Date(b.savedAt) - new Date(a.savedAt);
-        else            return new Date(a.savedAt) - new Date(b.savedAt);
+      recs.sort((a, b) => {
+        return sort === 'new'
+          ? new Date(b.savedAt) - new Date(a.savedAt)
+          : new Date(a.savedAt) - new Date(b.savedAt);
       });
 
-      // 출력
       container.innerHTML = '';
-      recs.forEach((r,i) => {
+      if (!recs.length) {
+        container.innerHTML = '<p>표시할 기록이 없습니다.</p>';
+        return;
+      }
+      recs.forEach(r => {
         const div = document.createElement('div');
         div.className = 'record';
         div.innerHTML = `
@@ -67,78 +153,18 @@
           <p>시작: ${r.startDate}<br>
              종료: ${r.endDate}<br>
              담당자: ${r.personName}<br>
-             메모: ${r.memo || '-'}
-          </p>
-          <button class="btn" onclick="editRecord(${i})">수정</button>
-          <button class="btn" onclick="deleteRecord(${i})">삭제</button>
+             메모: ${r.memo || '-'}</p>
+          <button class="btn" onclick="editRecordInDB('${r.key}')">수정</button>
+          <button class="btn" onclick="deleteRecordFromDB('${r.key}')">삭제</button>
         `;
         container.appendChild(div);
       });
-
-      if (recs.length===0) {
-        container.innerHTML = '<p>표시할 기록이 없습니다.</p>';
-      }
     }
 
-    // 레코드 삭제
-    function deleteRecord(idx) {
-      if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
-      const recs = loadRecords();
-      recs.splice(idx,1);
-      localStorage.setItem('zoneRecords', JSON.stringify(recs));
-      render();
-    }
-
-    // 레코드 수정 (간단히 prompt로)
-    function editRecord(idx) {
-      const recs = loadRecords();
-      const r = recs[idx];
-      const start = prompt('시작 날짜', r.startDate);
-      if (start===null) return;
-      const end   = prompt('종료 날짜',  r.endDate);
-      if (end===null)   return;
-      const person= prompt('담당자',     r.personName);
-      if (person===null) return;
-      const memo  = prompt('메모',       r.memo);
-      if (memo===null)  return;
-      // 수정 반영
-      r.startDate  = start;
-      r.endDate    = end;
-      r.personName = person;
-      r.memo       = memo;
-      localStorage.setItem('zoneRecords', JSON.stringify(recs));
-      render();
-    }
-
-    // JSON → CSV → 엑셀(.csv) 다운로드
-    function exportToExcel() {
-      const recs = loadRecords();
-      if (recs.length===0) { alert('내보낼 기록이 없습니다.'); return; }
-
-      // CSV 헤더
-      const header = ['구역','시작일','종료일','담당자','메모','저장일'];
-      const rows = recs.map(r => [
-        `"${r.zone}"`,
-        r.startDate,
-        r.endDate,
-        `"${r.personName}"`,
-        `"${r.memo.replace(/"/g,'""')}"`,
-        new Date(r.savedAt).toLocaleString()
-      ].join(','));
-
-      const csvContent = [ header.join(','), ...rows ].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'zone_records.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    // 초기 렌더링
-    render();
+    // 초기화
+    window.onload = () => {
+      subscribeRecords(render);
+    };
   </script>
 </body>
 </html>
