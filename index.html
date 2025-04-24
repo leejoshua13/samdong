@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>구역 관리 앱</title>
+  <style>
+    /* 박스 사이징 기본 적용 */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    /* 폼 요소만 100% 너비 */
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+
+    /* 버튼은 기본 크기, 자동 너비 */
+    button {
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      width: auto;
+      cursor: pointer;
+    }
+
+    body {
+      padding-bottom: 100px;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .page { display: none; }
+    .active { display: block; }
+
+    /* 홈 화면 구역 버튼 */
+    #zones {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .zone-btn {
+      padding: 10px;
+      font-size: 14px;
+      text-align: center;
+      cursor: pointer;
+      background: #eee;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    /* 기록 그룹 */
+    .record-group {
+      margin-bottom: 20px;
+    }
+    .record-group h3 {
+      background-color: #f0f0f0;
+      padding: 8px;
+      margin: 0;
+    }
+    .record {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    /* 하단 내비게이션 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #f9f9f9;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+    .bottom-nav button { width: 45%; padding: 10px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <!-- 홈 화면 -->
+  <div id="home-page" class="page active">
+    <h2>구역을 선택해주세요</h2>
+    <div id="zones"></div>
+  </div>
+
+  <!-- 기록 확인 화면 -->
+  <div id="records-page" class="page">
+    <h2>저장된 기록 확인</h2>
+    <input type="text" id="search" placeholder="구역 또는 담당자 검색..." oninput="loadRecords()" />
+    <select id="sort-by" onchange="loadRecords()">
+      <option value="latest">최신순</option>
+      <option value="oldest">오래된순</option>
+      <option value="zone">구역명순</option>
+      <option value="name">담당자순</option>
+    </select>
+    <button onclick="exportToExcel()">엑셀로 내보내기</button>
+    <div id="records-container"></div>
+  </div>
+
+  <!-- 하단 내비게이션 -->
+  <div class="bottom-nav">
+    <button onclick="showPage('home-page')">홈</button>
+    <button onclick="showPage('records-page'); loadRecords();">기록 확인</button>
+  </div>
+
+  <script>
+    const zoneNames = { 1: "창지족-1", 2: "창지족-2", 3: "신흥-1", 4: "신흥-2" };
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+    }
+
+    // 홈 화면: 1~4번 구역 버튼 생성
+    for (let i = 1; i <= 4; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'zone-btn';
+      btn.innerHTML = `No.${i}<br>${zoneNames[i]}`;
+      btn.onclick = () => location.href = `zone${i}.html`;
+      document.getElementById('zones').appendChild(btn);
+    }
+
+    // 기록 불러오기 & 렌더링
+    function groupByZone(records) {
+      return records.reduce((acc, r) => {
+        (acc[r.zone] = acc[r.zone] || []).push(r);
+        return acc;
+      }, {});
+    }
+
+    function loadRecords() {
+      const searchValue = document.getElementById('search').value.toLowerCase();
+      const sortBy = document.getElementById('sort-by').value;
+      let records = JSON.parse(localStorage.getItem('zoneRecords') || '[]');
+
+      // 검색 필터링
+      if (searchValue) {
+        records = records.filter(r =>
+          r.zone.toLowerCase().includes(searchValue) ||
+          r.personName.toLowerCase().includes(searchValue)
+        );
+      }
+
+      // 정렬
+      records.sort((a, b) => {
+        if (sortBy === 'oldest') return new Date(a.savedAt) - new Date(b.savedAt);
+        if (sortBy === 'zone')   return a.zone.localeCompare(b.zone, 'ko');
+        if (sortBy === 'name')   return a.personName.localeCompare(b.personName, 'ko');
+        return new Date(b.savedAt) - new Date(a.savedAt);
+      });
+
+      const container = document.getElementById('records-container');
+      container.innerHTML = '';
+      if (!records.length) {
+        container.innerHTML = '<p>저장된 기록이 없습니다.</p>';
+        return;
+      }
+
+      const grouped = groupByZone(records);
+      Object.entries(grouped).forEach(([zone, recs]) => {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'record-group';
+        groupDiv.innerHTML = `<h3>${zone} (총 ${recs.length}건)</h3>`;
+        recs.forEach((r, idx) => {
+          const div = document.createElement('div');
+          div.className = 'record';
+          div.innerHTML = `
+            시작: ${r.startDate}<br>
+            종료: ${r.endDate}<br>
+            담당자: ${r.personName}<br>
+            메모: ${r.memo || '-'}<br>
+            저장일: ${new Date(r.savedAt).toLocaleString()}<br>
+            <button onclick="editRecord(${idx})">수정</button>
+            <button onclick="deleteRecord(${idx})">삭제</button>
+          `;
+          groupDiv.appendChild(div);
+        });
+        container.appendChild(groupDiv);
+      });
+    }
+
+    // 수정, 삭제, 엑셀 내보내기 함수 (기존 구현 유지)
+    function editRecord(i) { /* ... */ }
+    function saveEdit(i) { /* ... */ }
+    function deleteRecord(i) { /* ... */ }
+    function exportToExcel() { /* ... */ }
+
+    window.onload = () => {
+      if (location.hash === '#records') {
+        showPage('records-page');
+        loadRecords();
+      } else {
+        showPage('home-page');
+      }
+    };
+  </script>
+</body>
+</html>

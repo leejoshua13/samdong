@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구역별 기록 확인</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>구역별 기록 확인</h2>
+
+  <div id="records-container">
+    <!-- 저장된 기록이 여기에 나타남 -->
+  </div>
+
+  <script>
+    const container = document.getElementById('records-container');
+    const records = JSON.parse(localStorage.getItem('zoneRecords') || '[]');
+
+    if (records.length === 0) {
+      container.innerHTML = '<p>저장된 기록이 없습니다.</p>';
+    } else {
+      records.forEach(record => {
+        const div = document.createElement('div');
+        div.className = 'record';
+        div.innerHTML = `
+          <strong>${record.zone}</strong><br>
+          시작: ${record.startDate}<br>
+          종료: ${record.endDate}<br>
+          담당자: ${record.personName}<br>
+          메모: ${record.memo || '-'}<br>
+          저장일: ${new Date(record.savedAt).toLocaleString()}
+          <hr>
+        `;
+        container.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>No.3 - 신흥-1</title>
+  <!-- 네이버 지도 API -->
+  <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px auto; max-width: 700px; padding-bottom: 100px; }
+    #map { width: 100%; height: 600px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
+    input, button, textarea { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+    textarea { resize: vertical; height: 100px; }
+    .label-marker { position: absolute; transform: translate(-50%, -50%); font-size: 16px; font-weight: bold; color: red; background: none; border: none; text-align: center; }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #f9f9f9;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+    .bottom-nav button { width: 45%; padding: 10px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>No.3 - 신흥-1</h2>
+  <div id="map"></div>
+
+  <label>시작 날짜: <input type="date" id="start-date"></label>
+  <label>종료 날짜: <input type="date" id="end-date"></label>
+  <label>담당자: <input type="text" id="person-name" placeholder="이름 입력"></label>
+  <label>메모:<br><textarea id="memo" placeholder="메모를 입력하세요"></textarea></label>
+  <button onclick="saveRecord()">저장</button>
+
+  <div class="bottom-nav">
+    <button onclick="location.href='index.html'">홈</button>
+    <button onclick="location.href='index.html#records'">기록 확인</button>
+  </div>
+
+  <script>
+    // 신흥 하위 구역 좌표 (lng, lat)
+    const subs = {
+      '3-1': [ [127.98655494275113,34.83722079907393], [127.98636427556727,34.83698605551339], [127.98223315325924,34.838629246381046], [127.97870581036642,34.84155039360391], [127.97783191910872,34.84109397118384], [127.97667202707612,34.842476271310034], [127.9779590305651,34.842802282107655], [127.97964325735148,34.841028767774134], [127.9842669365496,34.83832930128868], [127.98611005265599,34.83762507808164], [127.98658672061481,34.83722079907393] ],
+      '3-2': [ [127.9781020309527,34.842906605290196], [127.97986570239908,34.84114613387399], [127.98456882625715,34.83842058904125], [127.98622127517979,34.83772940782586], [127.98734938934876,34.83981597494284], [127.98445760373335,34.84114613387399], [127.98193126355307,34.84138086557161], [127.98161348491288,34.841915529717596], [127.98043770394912,34.84235890710683], [127.97986570239908,34.84288052450711], [127.97892825541396,34.84289356489967], [127.97805436415632,34.84293268606561] ],
+      '3-3': [ [127.97624302591356,34.84378030675268], [127.97770480765388,34.843115251258595], [127.97980214667166,34.84308917054162], [127.98053303754028,34.842502352221814], [127.98169292957294,34.84211113768387], [127.98221726432809,34.84158951540766], [127.98301171092567,34.84140694682989], [127.98406038043458,34.84140694682989], [127.98183592996043,34.843219574044426], [127.97624302591356,34.84383246774098] ],
+      '3-4': [ [127.97597291407118,34.8439759102872], [127.9761159144586,34.84358470275393], [127.97721225076242,34.84306308981637], [127.97637013736988,34.842710999214376], [127.97557569077242,34.84113309320452], [127.9737643525296,34.84256755446363], [127.97521024533728,34.844106312385065], [127.97598880300228,34.84400199072316] ]
+    };
+
+    // 위치 보정용 오프셋 (픽셀)
+    const offsets = {
+      '3-1': new naver.maps.Point(0, -20),  // 1번 아래쪽으로 조정
+      '3-3': new naver.maps.Point(-30, 20) // 3번 왼쪽 위로 조정
+    };
+
+    // 지도 초기화
+    const map = new naver.maps.Map('map', {});
+    const bounds = new naver.maps.LatLngBounds();
+
+    // 경계 그리기 및 마커 표시
+    Object.entries(subs).forEach(([key, coords]) => {
+      const path = coords.map(([lng, lat]) => new naver.maps.LatLng(lat, lng));
+      new naver.maps.Polyline({ map, path, strokeColor: '#ff0000', strokeWeight: 2 });
+      path.forEach(p => bounds.extend(p));
+      const sb = new naver.maps.LatLngBounds(path[0], path[0]);
+      path.forEach(p => sb.extend(p));
+      new naver.maps.Marker({
+        position: sb.getCenter(),
+        map,
+        icon: {
+          content: `<div class="label-marker">${key.split('-')[1]}</div>`,
+          anchor: offsets[key] || new naver.maps.Point(0, 0)
+        }
+      });
+    });
+
+    // 화면에 맞게 초기 범위 설정 (100m 스케일)
+    map.fitBounds(bounds);
+    map.setCenter(bounds.getCenter());
+    map.setZoom(17); // 초기 100m 줌
+
+    // 1초 후 300m 스케일로 축소
+    setTimeout(() => {
+      map.setZoom(15); // 대략 300m 축척
+    }, 100);
+
+    // 기록 저장 함수
+    function saveRecord() {
+      const record = {
+        zone: 'No.3 - 신흥',
+        startDate: document.getElementById('start-date').value,
+        endDate: document.getElementById('end-date').value,
+        personName: document.getElementById('person-name').value,
+        memo: document.getElementById('memo').value,
+        savedAt: new Date().toISOString()
+      };
+      const recs = JSON.parse(localStorage.getItem('zoneRecords')||'[]');
+      recs.push(record);
+      localStorage.setItem('zoneRecords', JSON.stringify(recs));
+      alert('기록이 저장되었습니다!');
+      location.href = 'index.html#records';
+    }
+  </script>
+</body>
+</html>
