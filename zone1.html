@@ -15,7 +15,7 @@
     textarea { resize:vertical; height:100px; }
     .label-marker { font-size:16px; font-weight:bold; color:red; background:none; border:none; text-align:center; }
     .bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:#f9f9f9; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:10px 0; }
-    .bottom-nav button { width:45%; padding:10px; font-size:16px; }
+    .bottom-nav button { width:45%; padding:10px; font-size:16px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -48,47 +48,47 @@
     <button onclick="location.href='index.html#records'">기록 확인</button>
   </div>
 
-  <!-- Firebase & App Logic -->
   <script type="module">
+    // 1) Firebase core
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    // 2) Realtime Database
     import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-    // 콘솔에서 복사한 구성 객체 (databaseURL 확인!)
     const firebaseConfig = {
       apiKey: "AIzaSyDk9fpF-lsGYeuRNcvfaB0cpdANK-mDPSQ",
       authDomain: "sandong-9579a.firebaseapp.com",
       databaseURL: "https://sandong-9579a-default-rtdb.firebaseio.com",
       projectId: "sandong-9579a",
-      storageBucket: "sandong-9579a.appspot.com",    // 콘솔과 일치시키세요
+      storageBucket: "sandong-9579a.appspot.com",
       messagingSenderId: "130428062710",
       appId: "1:130428062710:web:002f9d0899f5b7c5cad5d7",
-      measurementId: "G-ZR4KD0E55J"                // 선택 사항
+      measurementId: "G-ZR4KD0E55J"
     };
 
     // Firebase 초기화
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // 지도 표시용 좌표 (예시 subs)
+    // 지도 하위구역 좌표 정의 (lng, lat)
     const subs = {
       '1-1': [ [128.0009778761463,34.83691669235313], [128.0014611570656,34.83751573973103], [128.00113568216074,34.837944784497836], [128.0006918527451,34.83800954577782], [127.99915324410262,34.83811478274977], [127.99873900331465,34.837847642482274], [127.99828531102156,34.837507644525246], [127.99845297991197,34.836892406556714], [127.99909406684719,34.8368519302134], [127.99970556515319,34.83682764439787], [128.0002184347017,34.836770977467125], [128.0005340467306,34.836770977467125], [128.000701715621,34.83682764439787], [128.0009778761463,34.83690050182301] ],
       '1-2': [ [128.00032156773085,34.83604817076878], [128.00039532863303,34.836440100980084], [128.00033709634187,34.83659942167077], [128.00023227821754,34.83668226830903], [127.99978583065115,34.83674599643483], [127.99944420120681,34.83675555564946], [127.99898998933486,34.83676830126724], [127.9984503701026,34.8367969789], [127.99800780468888,34.83682565652278], [127.99816309079893,34.83672687800227], [127.99827567322876,34.836535693431486], [127.99829508399245,34.83625528859258], [127.99831449475619,34.83619474651334], [127.99901328225138,34.83619474651334], [127.99963830884434,34.83613420438962], [128.00031768557807,34.83604498433664] ],
       '1-3': [ [127.9982574644215,34.836879929354765], [127.99823930152189,34.83719299204019], [127.99814848702431,34.83752593041591], [127.99826957302116,34.83817689558727], [127.99803950962712,34.83842535421981], [127.99748549400448,34.83987840803681], [127.99643998105597,34.84016755215187], [127.99611041719231,34.83967320837178], [127.99593995312489,34.839505317356256], [127.9953717395669,34.83923482555474], [127.9951444541419,34.8387964404038], [127.99496262580328,34.838609892822916], [127.99478079746473,34.838553928466226], [127.99455351204153,34.8382274689599], [127.99373528451792,34.83805024754322], [127.99357618472169,34.837975627885186], [127.99337162784082,34.83763983858647], [127.99415576255092,34.8376678210803], [127.99572403197283,34.83735068559339], [127.9967127235638,34.83736001312518], [127.99792870057973,34.83693094556979], [127.99825450246698,34.83688186165479] ]
     };
 
-    // 네이버 지도 렌더링
-    const map = new naver.maps.Map('map', { zoom:16 });
-    const bounds = new naver.maps.LatLngBounds();
 
+    // 네이버 지도 초기화
+    const map = new naver.maps.Map('map', { zoom: 16 });
+    const bounds = new naver.maps.LatLngBounds();
     Object.entries(subs).forEach(([key, coords]) => {
       const path = coords.map(([lng,lat]) => new naver.maps.LatLng(lat,lng));
       new naver.maps.Polyline({ map, path, strokeColor:'#f00', strokeWeight:2 });
-      path.forEach(p => bounds.extend(p));
-      // 라벨 마커
+      path.forEach(p=>bounds.extend(p));
       const sb = new naver.maps.LatLngBounds(path[0],path[0]);
-      path.forEach(p => sb.extend(p));
+      path.forEach(p=>sb.extend(p));
       new naver.maps.Marker({
-        position: sb.getCenter(), map,
+        position: sb.getCenter(),
+        map,
         icon: {
           content: `<div class="label-marker">${key.split('-')[1]}</div>`,
           anchor: new naver.maps.Point(0,0)
@@ -98,23 +98,24 @@
     map.fitBounds(bounds);
     if (map.getZoom()>17) map.setZoom(17);
 
-    // 저장 버튼 클릭 → zoneRecords에 push
-    document.getElementById('save-btn').addEventListener('click', () => {
-      const rec = {
-        zone:       'No.1 - 창지족-1',
-        startDate:  document.getElementById('start-date').value,
-        endDate:    document.getElementById('end-date').value,
-        personName: document.getElementById('person-name').value,
-        memo:       document.getElementById('memo').value,
-        savedAt:    new Date().toISOString()
-      };
-      push(ref(db, 'zoneRecords'), rec)
-        .then(()=> {
-          alert('기록이 저장되었습니다!');
-          location.href = 'index.html#records';
-        })
-        .catch(err => console.error(err));
-    });
+    // 저장 버튼 클릭 → RealtimeDB에 push
+    document.getElementById('save-btn')
+      .addEventListener('click', () => {
+        const rec = {
+          zone:       'No.1 - 창지족-1',
+          startDate:  document.getElementById('start-date').value,
+          endDate:    document.getElementById('end-date').value,
+          personName: document.getElementById('person-name').value,
+          memo:       document.getElementById('memo').value,
+          savedAt:    new Date().toISOString()
+        };
+        push(ref(db,'zoneRecords'), rec)
+          .then(() => {
+            alert('기록이 저장되었습니다!');
+            location.href = 'index.html#records';
+          })
+          .catch(err => console.error('저장 오류:', err));
+      });
   </script>
 </body>
 </html>
