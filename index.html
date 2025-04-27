@@ -6,73 +6,37 @@
   <title>구역 관리 앱</title>
   <!-- SheetJS for Excel export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- Firebase App (core SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js"></script>
+  <!-- Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      padding-bottom: 100px;
-    }
-    .page { display: none; }
-    .active { display: block; }
-    /* 홈 버튼 그리드 */
-    #zones {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-    .zone-btn {
-      padding: 10px;
-      font-size: 14px;
-      text-align: center;
-      background: #eee;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    /* 기록 화면 컨트롤 */
-    #controls {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    #search, #sort-by, #export-btn {
-      padding: 8px;
-      font-size: 1rem;
-      height: 40px;
-    }
-    #export-btn { cursor: pointer; }
-    /* 기록 그룹 */
-    .record-group { margin-bottom: 20px; }
-    .record-group h3 { background: #f0f0f0; margin: 0; padding: 8px; }
-    .record { border: 1px solid #ddd; padding: 10px; margin-top: -1px; }
-    .record button { margin-top: 8px; padding: 6px 12px; cursor: pointer; }
-    /* 하단 내비 */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; width: 100%;
-      background: #f9f9f9; border-top: 1px solid #ddd;
-      display: flex; justify-content: space-around;
-      padding: 10px 0;
-    }
-    .bottom-nav button {
-      width: 45%; padding: 10px; font-size: 16px; cursor: pointer;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; padding-bottom: 100px; }
+    .page { display: none; } .active { display: block; }
+    #zones { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; margin-bottom:20px; }
+    .zone-btn { padding:10px; font-size:14px; text-align:center; background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer; }
+    #controls { display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-bottom:12px; }
+    #search,#sort-by,#export-btn { padding:8px; font-size:1rem; height:40px; }
+    #export-btn { cursor:pointer; }
+    .record-group { margin-bottom:20px; }
+    .record-group h3 { background:#f0f0f0; margin:0; padding:8px; }
+    .record { border:1px solid #ddd; padding:10px; margin-top:-1px; }
+    .record button { margin-top:8px; padding:6px 12px; cursor:pointer; }
+    .bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:#f9f9f9; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:10px 0; }
+    .bottom-nav button { width:45%; padding:10px; font-size:16px; }
   </style>
 </head>
 <body>
-  <!-- 홈 페이지 -->
   <div id="home-page" class="page active">
     <h2>구역을 선택해주세요</h2>
     <div id="zones"></div>
   </div>
-  <!-- 기록 확인 페이지 -->
   <div id="records-page" class="page">
     <h2>저장된 기록 확인</h2>
     <div id="controls">
-      <input type="text" id="search" placeholder="구역 또는 담당자 검색…" oninput="loadRecords()" />
-      <select id="sort-by" onchange="loadRecords()">
+      <input type="text" id="search" placeholder="구역 또는 담당자 검색…" oninput="render()" />
+      <select id="sort-by" onchange="render()">
         <option value="latest">최신순</option>
         <option value="oldest">오래된순</option>
         <option value="zone">구역명순</option>
@@ -82,147 +46,100 @@
     </div>
     <div id="records-container"></div>
   </div>
-  <!-- 하단 내비게이션 -->
   <div class="bottom-nav">
     <button onclick="showPage('home-page')">홈</button>
-    <button onclick="showPage('records-page'); loadRecords();">기록 확인</button>
+    <button onclick="showPage('records-page')">기록 확인</button>
   </div>
 
-  <!-- Firebase + App Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import {
-      getDatabase,
-      ref,
-      push,
-      onValue,
-      update,
-      remove
-    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-    // Firebase 설정 (databaseURL을 실제 인스턴스 URL로 교체)
+  <script>
+    // Firebase 설정 (Console > Realtime Database > Data 탭에서 복사한 URL)
     const firebaseConfig = {
       apiKey: "AIzaSyDk9fpF-lsGYeuRNcvfaB0cpdANK-mDPSQ",
       authDomain: "sandong-9579a.firebaseapp.com",
-      databaseURL: "https://sandong-9579a-default-rtdb.firebaseio.com",
+      databaseURL: "https://samdong-9579a-default-rtdb.firebaseio.com",
       projectId: "sandong-9579a",
       storageBucket: "sandong-9579a.appspot.com",
       messagingSenderId: "130428062710",
       appId: "1:130428062710:web:002f9d0899f5b7c5cad5d7"
     };
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
+    // 초기화
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    // 구역명 정의
-    const zoneNames = { 1:'창지족-1', 2:'창지족-2', 3:'신흥-1', 4:'신흥-2' };
-    // 페이지 전환
+    // 페이지 전환 & 홈 버튼
     function showPage(id) {
-      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
     window.showPage = showPage;
+
     // 홈 화면: 구역 버튼 생성
-    for (let i=1; i<=4; i++) {
+    const zoneNames = {1:'창지족-1',2:'창지족-2',3:'신흥-1',4:'신흥-2'};
+    for (let i=1;i<=4;i++) {
       const btn = document.createElement('button');
       btn.className = 'zone-btn';
       btn.innerHTML = `No.${i}<br>${zoneNames[i]}`;
-      btn.onclick = ()=> location.href = `zone${i}.html`;
+      btn.onclick = () => location.href = `zone${i}.html`;
       document.getElementById('zones').appendChild(btn);
     }
 
-    // 전역 레코드 저장소
     let allRecords = [];
-    // 레코드 불러오기 & 렌더링
-    function loadRecords() {
+    // 렌더링
+    function render() {
       const search = document.getElementById('search').value.toLowerCase();
       const sortBy = document.getElementById('sort-by').value;
-      onValue(ref(db,'zoneRecords'), snap => {
+      const cont = document.getElementById('records-container');
+      db.ref('zoneRecords').on('value', snap => {
         const data = snap.val() || {};
-        allRecords = Object.entries(data).map(([key, r])=>({ key, ...r }));
+        allRecords = Object.entries(data).map(([k,v])=>({key:k,...v}));
         let recs = allRecords.slice();
-        // 검색
-        if (search) recs = recs.filter(r=>
-          r.zone.toLowerCase().includes(search) ||
-          r.personName.toLowerCase().includes(search)
-        );
-        // 정렬
+        if (search) recs = recs.filter(r=>r.zone.toLowerCase().includes(search)||r.personName.toLowerCase().includes(search));
         recs.sort((a,b)=>{
-          if (sortBy==='oldest') return new Date(a.savedAt)-new Date(b.savedAt);
-          if (sortBy==='zone')   return a.zone.localeCompare(b.zone,'ko');
-          if (sortBy==='name')   return a.personName.localeCompare(b.personName,'ko');
+          if(sortBy==='oldest')return new Date(a.savedAt)-new Date(b.savedAt);
+          if(sortBy==='zone')return a.zone.localeCompare(b.zone,'ko');
+          if(sortBy==='name')return a.personName.localeCompare(b.personName,'ko');
           return new Date(b.savedAt)-new Date(a.savedAt);
         });
-        const cont = document.getElementById('records-container');
-        cont.innerHTML = '';
-        if (!recs.length) return cont.innerHTML='<p>저장된 기록이 없습니다.</p>';
-        // 그룹핑 & 렌더링
-        const groups = recs.reduce((acc,r)=>{
-          (acc[r.zone]=acc[r.zone]||[]).push(r);
-          return acc;
-        },{});
-        for (const [zone, arr] of Object.entries(groups)) {
-          const g = document.createElement('div'); g.className='record-group';
-          g.innerHTML=`<h3>${zone} (총 ${arr.length}건)</h3>`;
-          arr.forEach(rec=>{
-            const d = document.createElement('div'); d.className='record';
-            d.innerHTML = `
-              시작: ${rec.startDate}<br>
-              종료: ${rec.endDate}<br>
-              담당자: ${rec.personName}<br>
-              메모: ${rec.memo||'-'}<br>
-              저장일: ${new Date(rec.savedAt).toLocaleString()}<br>
-              <button onclick="editRecord('${rec.key}')">수정</button>
-              <button onclick="deleteRecord('${rec.key}')">삭제</button>
-            `;
+        cont.innerHTML = recs.length?'' : '<p>저장된 기록이 없습니다.</p>';
+        const groups = recs.reduce((acc,r)=>{(acc[r.zone]=acc[r.zone]||[]).push(r);return acc;},{});
+        for(const [zone,arr] of Object.entries(groups)){
+          const g=document.createElement('div');g.className='record-group';
+          g.innerHTML=`<h3>${zone}(총${arr.length}건)</h3>`;
+          arr.forEach(r=>{
+            const d=document.createElement('div');d.className='record';
+            d.innerHTML=`시작:${r.startDate}<br>종료:${r.endDate}<br>담당자:${r.personName}<br>메모:${r.memo||'-'}<br>저장일:${new Date(r.savedAt).toLocaleString()}<br><button onclick="editRecord('${r.key}')">수정</button><button onclick="deleteRecord('${r.key}')">삭제</button>`;
             g.appendChild(d);
-          });
-          cont.appendChild(g);
+          });cont.appendChild(g);
         }
       });
     }
-    window.loadRecords = loadRecords;
+    window.render=render;
 
-    // 저장 함수
-    function saveRecord(record) {
-      push(ref(db,'zoneRecords'), record);
+    // 수정
+    function editRecord(key){
+      const r=allRecords.find(x=>x.key===key);if(!r)return;
+      const s=prompt('시작 날짜',r.startDate);if(s===null)return;
+      const e=prompt('종료 날짜',r.endDate);if(e===null)return;
+      const p=prompt('담당자',r.personName);if(p===null)return;
+      const m=prompt('메모',r.memo);if(m===null)return;
+      db.ref(`zoneRecords/${key}`).update({startDate:s,endDate:e,personName:p,memo:m,savedAt:new Date().toISOString()});
     }
-    window.saveRecord = saveRecord;
+    window.editRecord=editRecord;
 
-    // 수정 & 삭제
-    function editRecord(key) {
-      const r = allRecords.find(x=>x.key===key); if(!r) return;
-      const s=prompt('시작 날짜',r.startDate); if(s===null) return;
-      const e=prompt('종료 날짜',r.endDate);   if(e===null) return;
-      const p=prompt('담당자',r.personName); if(p===null) return;
-      const m=prompt('메모',r.memo);         if(m===null) return;
-      update(ref(db,`zoneRecords/${key}`),{
-        startDate:s,endDate:e,personName:p,memo:m,savedAt:new Date().toISOString()
-      });
-    }
-    window.editRecord = editRecord;
-    function deleteRecord(key) {
-      if(confirm('정말 삭제하시겠습니까?')) remove(ref(db,`zoneRecords/${key}`));
-    }
-    window.deleteRecord = deleteRecord;
+    // 삭제
+    function deleteRecord(key){if(confirm('정말 삭제하시겠습니까?'))db.ref(`zoneRecords/${key}`).remove();}
+    window.deleteRecord=deleteRecord;
 
-    // 엑셀 내보내기
-    function exportToExcel() {
-      if(!allRecords.length) return alert('저장된 기록이 없습니다.');
-      const data = allRecords.map(r=>({
-        '구역':r.zone,'시작 날짜':r.startDate,'종료 날짜':r.endDate,
-        '담당자':r.personName,'메모':r.memo||'-','저장일시':new Date(r.savedAt).toLocaleString()
-      }));
-      const ws = XLSX.utils.json_to_sheet(data,{header:['구역','시작 날짜','종료 날짜','담당자','메모','저장일시']});
-      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'기록');
-      XLSX.writeFile(wb,'구역_기록.xlsx');
+    // 엑셀
+    function exportToExcel(){
+      if(!allRecords.length)return alert('저장된 기록이 없습니다.');
+      const data=allRecords.map(r=>({'구역':r.zone,'시작날짜':r.startDate,'종료날짜':r.endDate,'담당자':r.personName,'메모':r.memo||'-','저장일시':new Date(r.savedAt).toLocaleString()}));
+      const ws=XLSX.utils.json_to_sheet(data,{header:['구역','시작날짜','종료날짜','담당자','메모','저장일시']});
+      const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'기록');XLSX.writeFile(wb,'구역_기록.xlsx');
     }
-    window.exportToExcel = exportToExcel;
+    window.exportToExcel=exportToExcel;
 
-    // 초기 로드
-    window.onload = ()=>{
-      showPage(location.hash==='#records'?'records-page':'home-page');
-      loadRecords();
-    };
+    window.onload=()=>{showPage(location.hash==='#records'?'records-page':'home-page');render();};
   </script>
 </body>
 </html>
