@@ -7,21 +7,21 @@
   <!-- 네이버 지도 API -->
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
   <style>
-    .container { max-width: 700px; margin: 0 auto; padding: 0 16px; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; margin: 20px 0; padding-bottom: 100px; }
-    h2 { margin-top: 0; font-size: 1.5rem; }
-    #map { width: 100%; height: 600px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-    label { display: block; margin-bottom: 8px; font-weight: bold; }
-    input, button, textarea { width: 100%; padding: 12px; margin-bottom: 16px; box-sizing: border-box; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
-    textarea { resize: vertical; height: 120px; }
-    .label-marker { font-size: 16px; font-weight: bold; color: red; background: none; border: none; text-align: center; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f9f9f9; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; }
-    .bottom-nav button { width: 45%; padding: 10px; font-size: 1rem; }
+    .container { max-width:700px; margin:0 auto; padding:0 16px; box-sizing:border-box; }
+    body { font-family:Arial,sans-serif; margin:20px 0; padding-bottom:100px; }
+    h2 { margin-top:0; font-size:1.5rem; }
+    #map { width:100%; height:600px; margin-bottom:20px; border-radius:8px; overflow:hidden; }
+    label { display:block; margin-bottom:8px; font-weight:bold; }
+    input, button, textarea { width:100%; padding:12px; margin-bottom:16px; box-sizing:border-box; font-size:1rem; border:1px solid #ccc; border-radius:4px; }
+    textarea { resize:vertical; height:120px; }
+    .label-marker { font-size:16px; font-weight:bold; color:red; background:none; border:none; text-align:center; }
+    .bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:#f9f9f9; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:10px 0; }
+    .bottom-nav button { width:45%; padding:10px; font-size:1rem; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>No.4 - 신흥-2</h2>
+    <h2>No.4 – 신흥-2</h2>
     <div id="map"></div>
 
     <label for="start-date">시작 날짜</label>
@@ -45,14 +45,14 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-    // Firebase 설정
+    // Firebase 설정 (databaseURL을 Console → Realtime Database → Data 탭의 URL로 교체)
     const firebaseConfig = {
       apiKey: "AIzaSyDk9fpF-lsGYeuRNcvfaB0cpdANK-mDPSQ",
       authDomain: "sandong-9579a.firebaseapp.com",
-      databaseURL: "https://sandong-9579a.firebaseio.com",
+      databaseURL: "https://sandong-9579a-default-rtdb.firebaseio.com",
       projectId: "sandong-9579a",
       storageBucket: "sandong-9579a.appspot.com",
       messagingSenderId: "130428062710",
@@ -61,7 +61,7 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // 신흥 하위 구역 좌표 (lng, lat)
+    // 신흥-2 하위 구역 좌표 (lng, lat)
     const subs = {
       '4-1': [[127.97615933472593,34.84383558323985],[127.97583333869079,34.845051010999754],[127.97615933472593,34.845112164123094],[127.97640150321149,34.84492870461601],[127.97683926931745,34.84487519551588],[127.97710006614699,34.844722312181375],[127.97781725742647,34.84480639805048],[127.97886044474456,34.84435539101939],[127.97965214940336,34.844194862496465],[127.97973597695648,34.84431716997079],[127.97919575495348,34.84554023471719],[127.97997814544027,34.8457236928611],[127.9821949184896,34.84619762450768],[127.98228806021461,34.84476053304108],[127.97990363206094,34.84370563078161],[127.9785623912253,34.84354510099138],[127.97797559835891,34.84359861095626],[127.97759371728836,34.843124664343634],[127.97615002055397,34.843827938982955]],
       '4-2': [[127.97581471182355,34.845112164217355],[127.97615933620614,34.845158029030046],[127.97642944720764,34.84498221377554],[127.9768951558313,34.84491341639887],[127.97715595266084,34.8447758214744],[127.97778931638896,34.84485226312782],[127.97888838874076,34.844408900551656],[127.97961489419214,34.844256016350215],[127.97912124305253,34.84550965841375],[127.97842268011709,34.845792489653974],[127.977379492799,34.84645752144276],[127.9771652668328,34.84682443323267],[127.97694172669304,34.84677092536515],[127.97654121727669,34.84637343725994],[127.97593579606632,34.84657982555453],[127.9755725433397,34.84623584477649],[127.97519066226738,34.845754269272774],[127.97566568506477,34.84540264093421],[127.97576814096186,34.84528033507303],[127.97581471182355,34.845112164217355]],
@@ -73,36 +73,43 @@
     };
     const offsets = { '4-1': new naver.maps.Point(-30,30), '4-5': new naver.maps.Point(10,50) };
 
-    // 지도 초기화
-    const map = new naver.maps.Map('map', {});
+    // 지도에 폴리라인/마커 표시
+    const map = new naver.maps.Map('map',{ zoom:16 });
     const bounds = new naver.maps.LatLngBounds();
     Object.entries(subs).forEach(([key, coords]) => {
-      const path = coords.map(([lng, lat]) => new naver.maps.LatLng(lat, lng));
-      new naver.maps.Polyline({ map, path, strokeColor:'#ff0000', strokeWeight:2 });
-      path.forEach(p => bounds.extend(p));
-      const sb = new naver.maps.LatLngBounds(path[0],path[0]); path.forEach(p=>sb.extend(p));
-      new naver.maps.Marker({ position: sb.getCenter(), map, icon:{ content:`<div class="label-marker">${key.split('-')[1]}</div>`, anchor: offsets[key]||new naver.maps.Point(0,0) } });
+      const path = coords.map(([lng,lat]) => new naver.maps.LatLng(lat,lng));
+      new naver.maps.Polyline({ map, path, strokeColor:'#f00', strokeWeight:2 });
+      path.forEach(p=>bounds.extend(p));
+      const sb = new naver.maps.LatLngBounds(path[0],path[0]);
+      path.forEach(p=>sb.extend(p));
+      new naver.maps.Marker({
+        position: sb.getCenter(),
+        map,
+        icon: {
+          content: `<div class="label-marker">${key.split('-')[1]}</div>`,
+          anchor: offsets[key]||new naver.maps.Point(0,0)
+        }
+      });
     });
-
     // 초기 뷰 설정
     map.fitBounds(bounds);
     map.setCenter(bounds.getCenter());
     map.setZoom(15);
-    setTimeout(() => map.setZoom(16), 100);
+    setTimeout(()=>map.setZoom(16),100);
 
-    // 저장 버튼 이벤트
+    // 저장 버튼 클릭 시 Firebase에 기록 저장
     document.getElementById('save-btn').addEventListener('click', () => {
-      const record = {
-        zone: 'No.4 - 신흥-2',
-        startDate: document.getElementById('start-date').value,
-        endDate:   document.getElementById('end-date').value,
-        personName:document.getElementById('person-name').value,
-        memo:      document.getElementById('memo').value,
-        savedAt:   new Date().toISOString()
+      const rec = {
+        zone:       'No.4 - 신흥-2',
+        startDate:  document.getElementById('start-date').value,
+        endDate:    document.getElementById('end-date').value,
+        personName: document.getElementById('person-name').value,
+        memo:       document.getElementById('memo').value,
+        savedAt:    new Date().toISOString()
       };
-      push(ref(db,'zoneRecords'), record);
+      push(ref(db,'zoneRecords'), rec);
       alert('기록이 저장되었습니다!');
-      location.href='index.html#records';
+      location.href = 'index.html#records';
     });
   </script>
 </body>

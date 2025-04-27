@@ -7,16 +7,16 @@
   <!-- 네이버 지도 API -->
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
   <style>
-    .container { max-width: 700px; margin: 0 auto; padding: 0 16px; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; margin: 20px 0; padding-bottom: 100px; }
-    h2 { margin-top: 0; font-size: 1.5rem; }
-    #map { width: 100%; height: 600px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-    label { display: block; margin-bottom: 8px; font-weight: bold; }
-    input, button, textarea { width: 100%; padding: 12px; margin-bottom: 16px; box-sizing: border-box; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
-    textarea { resize: vertical; height: 120px; }
-    .label-marker { font-size: 16px; font-weight: bold; color: red; background: none; border: none; text-align: center; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f9f9f9; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; }
-    .bottom-nav button { width: 45%; padding: 10px; font-size: 1rem; }
+    .container { max-width:700px; margin:0 auto; padding:0 16px; box-sizing:border-box; }
+    body { font-family:Arial,sans-serif; margin:20px 0; padding-bottom:100px; }
+    h2 { margin-top:0; font-size:1.5rem; }
+    #map { width:100%; height:600px; margin-bottom:20px; border-radius:8px; overflow:hidden; }
+    label { display:block; margin-bottom:8px; font-weight:bold; }
+    input, button, textarea { width:100%; padding:12px; margin-bottom:16px; box-sizing:border-box; font-size:1rem; border:1px solid #ccc; border-radius:4px; }
+    textarea { resize:vertical; height:120px; }
+    .label-marker { font-size:16px; font-weight:bold; color:red; background:none; border:none; text-align:center; }
+    .bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:#f9f9f9; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:10px 0; }
+    .bottom-nav button { width:45%; padding:10px; font-size:1rem; }
   </style>
 </head>
 <body>
@@ -52,7 +52,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyDk9fpF-lsGYeuRNcvfaB0cpdANK-mDPSQ",
       authDomain: "sandong-9579a.firebaseapp.com",
-      databaseURL: "https://sandong-9579a.firebaseio.com",
+      databaseURL: "https://sandong-9579a-default-rtdb.firebaseio.com",
       projectId: "sandong-9579a",
       storageBucket: "sandong-9579a.appspot.com",
       messagingSenderId: "130428062710",
@@ -61,24 +61,23 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // 신흥 하위 구역 좌표 (lng, lat)
+    // 신흥-1 하위 구역 좌표 (lng, lat)
     const subs = {
       '3-1': [[127.98655494275113,34.83722079907393],[127.98636427556727,34.83698605551339],[127.98223315325924,34.838629246381046],[127.97870581036642,34.84155039360391],[127.97783191910872,34.84109397118384],[127.97667202707612,34.842476271310034],[127.9779590305651,34.842802282107655],[127.97964325735148,34.841028767774134],[127.9842669365496,34.83832930128868],[127.98611005265599,34.83762507808164],[127.98658672061481,34.83722079907393]],
       '3-2': [[127.9781020309527,34.842906605290196],[127.97986570239908,34.84114613387399],[127.98456882625715,34.83842058904125],[127.98622127517979,34.83772940782586],[127.98734938934876,34.83981597494284],[127.98445760373335,34.84114613387399],[127.98193126355307,34.84138086557161],[127.98161348491288,34.841915529717596],[127.98043770394912,34.84235890710683],[127.97986570239908,34.84288052450711],[127.97892825541396,34.84289356489967],[127.97805436415632,34.84293268606561]],
       '3-3': [[127.97624302591356,34.84378030675268],[127.97770480765388,34.843115251258595],[127.97980214667166,34.84308917054162],[127.98053303754028,34.842502352221814],[127.98169292957294,34.84211113768387],[127.98221726432809,34.84158951540766],[127.98301171092567,34.84140694682989],[127.98406038043458,34.84140694682989],[127.98183592996043,34.843219574044426],[127.97624302591356,34.84383246774098]],
       '3-4': [[127.97597291407118,34.8439759102872],[127.9761159144586,34.84358470275393],[127.97721225076242,34.84306308981637],[127.97637013736988,34.842710999214376],[127.97557569077242,34.84113309320452],[127.9737643525296,34.84256755446363],[127.97521024533728,34.844106312385065],[127.97598880300228,34.84400199072316]]
     };
-    const offsets = { '3-1': new naver.maps.Point(0,-20), '3-3': new naver.maps.Point(-30,20) };
 
     // 지도 초기화
-    const map = new naver.maps.Map('map', {});
+    const map = new naver.maps.Map('map', { zoom: 16 });
     const bounds = new naver.maps.LatLngBounds();
     Object.entries(subs).forEach(([key, coords]) => {
       const path = coords.map(([lng, lat]) => new naver.maps.LatLng(lat, lng));
-      new naver.maps.Polyline({ map, path, strokeColor:'#ff0000', strokeWeight:2 });
+      new naver.maps.Polyline({ map, path, strokeColor: '#ff0000', strokeWeight: 2 });
       path.forEach(p => bounds.extend(p));
-      const sb = new naver.maps.LatLngBounds(path[0],path[0]); path.forEach(p=>sb.extend(p));
-      new naver.maps.Marker({ position: sb.getCenter(), map, icon:{ content:`<div class=\"label-marker\">${key.split('-')[1]}</div>`, anchor: offsets[key]||new naver.maps.Point(0,0) } });
+      const sb = new naver.maps.LatLngBounds(path[0], path[0]); path.forEach(p => sb.extend(p));
+      new naver.maps.Marker({ position: sb.getCenter(), map, icon: { content: `<div class="label-marker">${key.split('-')[1]}</div>`, anchor: new naver.maps.Point(0, 0) } });
     });
 
     // 초기 뷰 설정
@@ -97,10 +96,9 @@
         memo:      document.getElementById('memo').value,
         savedAt:   new Date().toISOString()
       };
-      // Firebase에 저장
-      push(ref(db,'zoneRecords'), record);
+      push(ref(db, 'zoneRecords'), record);
       alert('기록이 저장되었습니다!');
-      location.href='index.html#records';
+      location.href = 'index.html#records';
     });
   </script>
 </body>
