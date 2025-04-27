@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>No.3 - 신흥-1</title>
   <!-- 네이버 지도 API -->
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
@@ -16,7 +16,7 @@
     textarea { resize:vertical; height:120px; }
     .label-marker { font-size:16px; font-weight:bold; color:red; background:none; border:none; text-align:center; }
     .bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:#f9f9f9; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:10px 0; }
-    .bottom-nav button { width:45%; padding:10px; font-size:1rem; }
+    .bottom-nav button { width:45%; padding:10px; font-size:1rem; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -45,28 +45,26 @@
   </div>
 
   <script type="module">
-    // Import the functions you need from the SDKs you need
+    // 1) Firebase core
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-  
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    // 2) Realtime Database
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+    // Firebase 설정 (console에서 복사한 값)
     const firebaseConfig = {
       apiKey: "AIzaSyDk9fpF-lsGYeuRNcvfaB0cpdANK-mDPSQ",
       authDomain: "sandong-9579a.firebaseapp.com",
       databaseURL: "https://sandong-9579a-default-rtdb.firebaseio.com",
       projectId: "sandong-9579a",
-      storageBucket: "sandong-9579a.firebasestorage.app",
+      storageBucket: "sandong-9579a.appspot.com",
       messagingSenderId: "130428062710",
       appId: "1:130428062710:web:002f9d0899f5b7c5cad5d7",
       measurementId: "G-ZR4KD0E55J"
     };
-  
-    // Initialize Firebase
+
+    // Firebase 초기화
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
+    const db  = getDatabase(app);
 
     // 신흥-1 하위 구역 좌표 (lng, lat)
     const subs = {
@@ -76,36 +74,51 @@
       '3-4': [[127.97597291407118,34.8439759102872],[127.9761159144586,34.84358470275393],[127.97721225076242,34.84306308981637],[127.97637013736988,34.842710999214376],[127.97557569077242,34.84113309320452],[127.9737643525296,34.84256755446363],[127.97521024533728,34.844106312385065],[127.97598880300228,34.84400199072316]]
     };
 
-    // 지도 초기화
+    // 네이버 지도 표시
     const map = new naver.maps.Map('map', { zoom: 16 });
     const bounds = new naver.maps.LatLngBounds();
     Object.entries(subs).forEach(([key, coords]) => {
       const path = coords.map(([lng, lat]) => new naver.maps.LatLng(lat, lng));
-      new naver.maps.Polyline({ map, path, strokeColor: '#ff0000', strokeWeight: 2 });
+      new naver.maps.Polyline({ map, path, strokeColor:'#ff0000', strokeWeight:2 });
       path.forEach(p => bounds.extend(p));
-      const sb = new naver.maps.LatLngBounds(path[0], path[0]); path.forEach(p => sb.extend(p));
-      new naver.maps.Marker({ position: sb.getCenter(), map, icon: { content: `<div class="label-marker">${key.split('-')[1]}</div>`, anchor: new naver.maps.Point(0, 0) } });
+      const sb = new naver.maps.LatLngBounds(path[0], path[0]);
+      path.forEach(p => sb.extend(p));
+      new naver.maps.Marker({
+        position: sb.getCenter(),
+        map,
+        icon: {
+          content: `<div class="label-marker">${key.split('-')[1]}</div>`,
+          anchor: new naver.maps.Point(0, 0)
+        }
+      });
     });
-
+    
     // 초기 뷰 설정
     map.fitBounds(bounds);
     map.setCenter(bounds.getCenter());
     map.setZoom(15);
     setTimeout(() => map.setZoom(16), 100);
 
-    // 저장 버튼 이벤트
+    // 저장 버튼 클릭 → Realtime DB에 push
     document.getElementById('save-btn').addEventListener('click', () => {
       const record = {
-        zone: 'No.3 - 신흥-1',
-        startDate: document.getElementById('start-date').value,
-        endDate:   document.getElementById('end-date').value,
-        personName:document.getElementById('person-name').value,
-        memo:      document.getElementById('memo').value,
-        savedAt:   new Date().toISOString()
+        zone:       'No.3 - 신흥-1',
+        startDate:  document.getElementById('start-date').value,
+        endDate:    document.getElementById('end-date').value,
+        personName: document.getElementById('person-name').value,
+        memo:       document.getElementById('memo').value,
+        savedAt:    new Date().toISOString()
       };
-      push(ref(db, 'zoneRecords'), record);
-      alert('기록이 저장되었습니다!');
-      location.href = 'index.html#records';
+      // db 객체를 참조해서 zoneRecords 아래에 새 노드로 저장
+      push(ref(db, 'zoneRecords'), record)
+        .then(() => {
+          alert('기록이 저장되었습니다!');
+          location.href = 'index.html#records';
+        })
+        .catch(err => {
+          console.error('저장 중 오류:', err);
+          alert('저장에 실패했습니다. 콘솔을 확인하세요.');
+        });
     });
   </script>
 </body>

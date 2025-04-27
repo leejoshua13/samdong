@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>No.4 - 신흥-2</title>
+  <title>No.4 – 신흥-2</title>
   <!-- 네이버 지도 API -->
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wer9y0rp81"></script>
   <style>
@@ -12,11 +12,25 @@
     h2 { margin-top:0; font-size:1.5rem; }
     #map { width:100%; height:600px; margin-bottom:20px; border-radius:8px; overflow:hidden; }
     label { display:block; margin-bottom:8px; font-weight:bold; }
-    input, button, textarea { width:100%; padding:12px; margin-bottom:16px; box-sizing:border-box; font-size:1rem; border:1px solid #ccc; border-radius:4px; }
+    input, button, textarea {
+      width:100%; padding:12px; margin-bottom:16px;
+      box-sizing:border-box; font-size:1rem;
+      border:1px solid #ccc; border-radius:4px;
+    }
     textarea { resize:vertical; height:120px; }
-    .label-marker { font-size:16px; font-weight:bold; color:red; background:none; border:none; text-align:center; }
-    .bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:#f9f9f9; border-top:1px solid #ddd; display:flex; justify-content:space-around; padding:10px 0; }
-    .bottom-nav button { width:45%; padding:10px; font-size:1rem; }
+    .label-marker {
+      font-size:16px; font-weight:bold; color:red;
+      background:none; border:none; text-align:center;
+    }
+    .bottom-nav {
+      position:fixed; bottom:0; left:0; width:100%;
+      background:#f9f9f9; border-top:1px solid #ddd;
+      display:flex; justify-content:space-around;
+      padding:10px 0;
+    }
+    .bottom-nav button {
+      width:45%; padding:10px; font-size:1rem; cursor:pointer;
+    }
   </style>
 </head>
 <body>
@@ -45,28 +59,26 @@
   </div>
 
   <script type="module">
-    // Import the functions you need from the SDKs you need
+    // 1) Firebase core
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-  
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    // 2) Realtime Database
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+    // Firebase 설정 (콘솔 > 일반설정 > SDK 구성 복사)
     const firebaseConfig = {
       apiKey: "AIzaSyDk9fpF-lsGYeuRNcvfaB0cpdANK-mDPSQ",
       authDomain: "sandong-9579a.firebaseapp.com",
       databaseURL: "https://sandong-9579a-default-rtdb.firebaseio.com",
       projectId: "sandong-9579a",
-      storageBucket: "sandong-9579a.firebasestorage.app",
+      storageBucket: "sandong-9579a.appspot.com",
       messagingSenderId: "130428062710",
       appId: "1:130428062710:web:002f9d0899f5b7c5cad5d7",
       measurementId: "G-ZR4KD0E55J"
     };
-  
-    // Initialize Firebase
+
+    // Firebase 초기화
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
+    const db  = getDatabase(app);
 
     // 신흥-2 하위 구역 좌표 (lng, lat)
     const subs = {
@@ -78,13 +90,15 @@
       '4-6': [[127.97601205131775,34.8437736390873],[127.97570546017892,34.84368137715228],[127.97510249760904,34.843916225509304],[127.97404986803593,34.8441846228109],[127.97299723846277,34.845165942994456],[127.97174021479896,34.845283365137874],[127.9701663802922,34.844998196783095],[127.9697575921071,34.84477173885634],[127.96963495565268,34.845224654087474],[127.97024813792848,34.845392399836456],[127.9718015330252,34.84561046879881],[127.97168911627489,34.84619757467328],[127.97090219902248,34.84663370775381],[127.9700846226541,34.84602144335071],[127.96994154678964,34.846096928249295],[127.97061604729362,34.84675112780381],[127.97065692611176,34.847170483757154],[127.9712598886835,34.847120161155075],[127.97214900298218,34.84663370775381],[127.97277240496209,34.84685177342692],[127.97317097344126,34.84653306186321],[127.97373305719299,34.8467930634947],[127.97454041385538,34.846071766623865],[127.97522513406341,34.84556014524358],[127.97562370254258,34.84523304138263],[127.97576677840703,34.84478851353887],[127.97601205131775,34.84378202653032]],
       '4-7': [[127.97252713205137,34.84805951131051],[127.9713109872057,34.847237580511006],[127.97215922268629,34.8467091920908],[127.9733549281238,34.84714532245995],[127.97248625323323,34.848076285322875]]
     };
+
+    // (필요한 경우) 특정 마커 오프셋
     const offsets = { '4-1': new naver.maps.Point(-30,30), '4-5': new naver.maps.Point(10,50) };
 
-    // 지도에 폴리라인/마커 표시
+    // 네이버 지도 표시
     const map = new naver.maps.Map('map',{ zoom:16 });
     const bounds = new naver.maps.LatLngBounds();
     Object.entries(subs).forEach(([key, coords]) => {
-      const path = coords.map(([lng,lat]) => new naver.maps.LatLng(lat,lng));
+      const path = coords.map(([lng,lat])=>new naver.maps.LatLng(lat,lng));
       new naver.maps.Polyline({ map, path, strokeColor:'#f00', strokeWeight:2 });
       path.forEach(p=>bounds.extend(p));
       const sb = new naver.maps.LatLngBounds(path[0],path[0]);
@@ -92,19 +106,20 @@
       new naver.maps.Marker({
         position: sb.getCenter(),
         map,
-        icon: {
-          content: `<div class="label-marker">${key.split('-')[1]}</div>`,
+        icon:{
+          content:`<div class="label-marker">${key.split('-')[1]}</div>`,
           anchor: offsets[key]||new naver.maps.Point(0,0)
         }
       });
     });
+    
     // 초기 뷰 설정
     map.fitBounds(bounds);
     map.setCenter(bounds.getCenter());
     map.setZoom(15);
     setTimeout(()=>map.setZoom(16),100);
 
-    // 저장 버튼 클릭 시 Firebase에 기록 저장
+    // 저장 버튼 클릭 → Realtime Database에 푸시
     document.getElementById('save-btn').addEventListener('click', () => {
       const rec = {
         zone:       'No.4 - 신흥-2',
@@ -114,9 +129,15 @@
         memo:       document.getElementById('memo').value,
         savedAt:    new Date().toISOString()
       };
-      push(ref(db,'zoneRecords'), rec);
-      alert('기록이 저장되었습니다!');
-      location.href = 'index.html#records';
+      push(ref(db,'zoneRecords'), rec)
+        .then(()=> {
+          alert('기록이 저장되었습니다!');
+          location.href = 'index.html#records';
+        })
+        .catch(err=> {
+          console.error('저장 오류:', err);
+          alert('저장에 실패했습니다. 콘솔을 확인하세요.');
+        });
     });
   </script>
 </body>
